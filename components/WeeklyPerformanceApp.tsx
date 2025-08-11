@@ -64,7 +64,21 @@ const WeeklyPerformanceApp = () => {
   // 값 업데이트
   const updateItem = (itemIndex: number, day: string, type: string, value: string) => {
     const newItems = [...items];
-    newItems[itemIndex][`${day}${type}`] = value;
+    
+    // 월요일 목표 입력 시 다른 요일에도 자동 적용
+    if (day === '월' && type === '목표') {
+      // 해당 항목의 다른 요일 목표가 비어있으면 월요일 값으로 채우기
+      days.forEach(d => {
+        if (d === '월') {
+          newItems[itemIndex][`${d}${type}`] = value;
+        } else if (!newItems[itemIndex][`${d}${type}`] || newItems[itemIndex][`${d}${type}`] === '') {
+          newItems[itemIndex][`${d}${type}`] = value;
+        }
+      });
+    } else {
+      newItems[itemIndex][`${day}${type}`] = value;
+    }
+    
     setItems(newItems);
   };
 
