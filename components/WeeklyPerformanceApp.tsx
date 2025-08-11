@@ -64,21 +64,7 @@ const WeeklyPerformanceApp = () => {
   // 값 업데이트
   const updateItem = (itemIndex: number, day: string, type: string, value: string) => {
     const newItems = [...items];
-    
-    // 월요일 목표 입력 시 다른 요일에도 자동 적용
-    if (day === '월' && type === '목표') {
-      // 해당 항목의 다른 요일 목표가 비어있으면 월요일 값으로 채우기
-      days.forEach(d => {
-        if (d === '월') {
-          newItems[itemIndex][`${d}${type}`] = value;
-        } else if (!newItems[itemIndex][`${d}${type}`] || newItems[itemIndex][`${d}${type}`] === '') {
-          newItems[itemIndex][`${d}${type}`] = value;
-        }
-      });
-    } else {
-      newItems[itemIndex][`${day}${type}`] = value;
-    }
-    
+    newItems[itemIndex][`${day}${type}`] = value;
     setItems(newItems);
   };
 
@@ -106,19 +92,24 @@ const WeeklyPerformanceApp = () => {
     }
   };
 
-  // 모든 목표 동일하게 설정
-  const setUniformTargets = () => {
-    const target = prompt('모든 요일의 목표를 입력하세요:');
-    if (target && /^\d+$/.test(target)) {
-      const newItems = items.map(item => {
-        const newItem = { ...item };
+  // 월요일 목표를 다른 요일에 복사
+  const copyMondayTargets = () => {
+    const newItems = items.map(item => {
+      const newItem = { ...item };
+      const mondayTarget = item['월목표'];
+      
+      // 월요일 목표가 있으면 다른 요일에 복사
+      if (mondayTarget) {
         days.forEach(day => {
-          newItem[`${day}목표`] = target;
+          if (day !== '월') {
+            newItem[`${day}목표`] = mondayTarget;
+          }
         });
-        return newItem;
-      });
-      setItems(newItems);
-    }
+      }
+      return newItem;
+    });
+    setItems(newItems);
+    alert('월요일 목표가 모든 요일에 복사되었습니다!');
   };
 
   // 특정 요일만 다른 목표 설정
@@ -127,14 +118,16 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 목표 일괄 적용
-  const applyBulkTargets = (defaultTarget: string, specialDay: string, specialTarget: string) => {
+  const applyBulkTargets = (specialDay: string, specialTarget: string) => {
     const newItems = items.map(item => {
       const newItem = { ...item };
+      const mondayTarget = item['월목표']; // 월요일 목표를 기본값으로 사용
+      
       days.forEach(day => {
         if (day === specialDay && specialTarget) {
           newItem[`${day}목표`] = specialTarget;
-        } else if (defaultTarget) {
-          newItem[`${day}목표`] = defaultTarget;
+        } else if (day !== '월' && mondayTarget) {
+          newItem[`${day}목표`] = mondayTarget;
         }
       });
       return newItem;
@@ -205,17 +198,18 @@ const WeeklyPerformanceApp = () => {
             주간 실적 계산기
           </h1>
           <p className="text-sm text-blue-400">Tab키로 옆 항목 이동, Enter키로 아래 요일 이동</p>
+          <p className="text-xs text-yellow-400 mt-1">💡 월요일 목표 입력 후 "월요일 목표를 전체에 적용" 버튼 클릭</p>
         </div>
 
         {/* 빠른 설정 버튼 */}
         <div className="bg-gray-800 rounded-lg shadow-xl p-3 mb-4 border border-gray-700">
           <div className="flex gap-2 flex-wrap">
             <button
-              onClick={setUniformTargets}
+              onClick={copyMondayTargets}
               className="px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
             >
               <Settings size={16} className="inline mr-1" />
-              모든 목표 동일 설정
+              월요일 목표를 전체에 적용
             </button>
             <button
               onClick={setDifferentDayTarget}
@@ -237,22 +231,14 @@ const WeeklyPerformanceApp = () => {
         {showSettings && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
             <div className="bg-gray-800 rounded-lg p-6 w-96 border border-gray-700">
-              <h3 className="text-lg font-bold mb-4 text-gray-100">목표 일괄 설정</h3>
+              <h3 className="text-lg font-bold mb-4 text-gray-100">특정 요일 다른 목표 설정</h3>
+              <p className="text-sm text-gray-400 mb-4">월요일 목표를 기준으로 다른 요일에 적용하되, 특정 요일만 다른 값으로 설정합니다.</p>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-300">기본 목표</label>
-                  <input
-                    type="text"
-                    id="defaultTarget"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:border-blue-500 focus:outline-none"
-                    placeholder="모든 요일 기본 목표"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-300">특별 요일</label>
+                  <label className="block text-sm font-medium mb-1 text-gray-300">특별 요일 선택</label>
                   <select id="specialDay" className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:border-blue-500 focus:outline-none">
                     <option value="">선택안함</option>
-                    {days.map(day => (
+                    {days.slice(1).map(day => (
                       <option key={day} value={day}>{day}요일</option>
                     ))}
                   </select>
@@ -269,10 +255,9 @@ const WeeklyPerformanceApp = () => {
                 <div className="flex gap-2">
                   <button
                     onClick={() => {
-                      const defaultTarget = (document.getElementById('defaultTarget') as HTMLInputElement).value;
                       const specialDay = (document.getElementById('specialDay') as HTMLSelectElement).value;
                       const specialTarget = (document.getElementById('specialTarget') as HTMLInputElement).value;
-                      applyBulkTargets(defaultTarget, specialDay, specialTarget);
+                      applyBulkTargets(specialDay, specialTarget);
                     }}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
@@ -311,9 +296,10 @@ const WeeklyPerformanceApp = () => {
                 </thead>
                 <tbody>
                   {days.map((day, dayIndex) => (
-                    <tr key={`target-${day}`} className="border-b border-gray-700 hover:bg-gray-750">
-                      <td className="px-4 py-2 font-medium text-gray-300 sticky left-0 bg-gray-800">
+                    <tr key={`target-${day}`} className={`border-b border-gray-700 hover:bg-gray-750 ${day === '월' ? 'bg-blue-900 bg-opacity-20' : ''}`}>
+                      <td className={`px-4 py-2 font-medium text-gray-300 sticky left-0 ${day === '월' ? 'bg-blue-900 bg-opacity-30' : 'bg-gray-800'}`}>
                         {day}요일
+                        {day === '월' && <span className="ml-2 text-xs text-yellow-400">기준</span>}
                       </td>
                       {items.map((item, itemIndex) => (
                         <td key={`${day}-${item.name}`} className="p-1">
