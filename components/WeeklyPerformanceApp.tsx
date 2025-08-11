@@ -1,17 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Calculator, Calendar, Settings, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Copy, Calculator, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+
+interface Item {
+  name: string;
+  target: string;
+  performance: string;
+}
+
+interface DayData {
+  items: Item[];
+}
+
+interface DailyData {
+  [key: string]: DayData;
+}
+
+interface ItemResult {
+  targets: { [key: string]: number };
+  performances: { [key: string]: number };
+  weeklyTarget: number;
+  weeklyPerformance: number;
+  weekendTarget: number;
+  achieved: boolean;
+}
+
+interface Results {
+  [key: string]: ItemResult;
+}
 
 const WeeklyPerformanceApp = () => {
   const [days] = useState(['월', '화', '수', '목', '금']);
-  const [dailyData, setDailyData] = useState({});
-  const [expandedDays, setExpandedDays] = useState({});
+  const [dailyData, setDailyData] = useState<DailyData>({});
+  const [expandedDays, setExpandedDays] = useState<{ [key: string]: boolean }>({});
   const [showResults, setShowResults] = useState(false);
-  const [results, setResults] = useState(null);
+  const [results, setResults] = useState<Results | null>(null);
 
   // 초기 데이터 설정
   useEffect(() => {
-    const initialData = {};
-    const initialExpanded = {};
+    const initialData: DailyData = {};
+    const initialExpanded: { [key: string]: boolean } = {};
     days.forEach(day => {
       initialData[day] = {
         items: [
@@ -33,7 +60,7 @@ const WeeklyPerformanceApp = () => {
   }, [days]);
 
   // 항목 추가
-  const addItem = (day) => {
+  const addItem = (day: string) => {
     const newName = prompt('새 항목 이름을 입력하세요:');
     if (newName && newName.trim()) {
       setDailyData(prev => ({
@@ -47,7 +74,7 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 항목 삭제
-  const removeItem = (day, index) => {
+  const removeItem = (day: string, index: number) => {
     if (window.confirm('이 항목을 삭제하시겠습니까?')) {
       setDailyData(prev => ({
         ...prev,
@@ -60,7 +87,7 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 입력값 변경
-  const updateItem = (day, index, field, value) => {
+  const updateItem = (day: string, index: number, field: keyof Item, value: string) => {
     setDailyData(prev => ({
       ...prev,
       [day]: {
@@ -73,7 +100,7 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 다른 요일에 같은 항목 복사
-  const copyItemsToDay = (fromDay, toDay) => {
+  const copyItemsToDay = (fromDay: string, toDay: string) => {
     if (window.confirm(`${fromDay}요일의 항목을 ${toDay}요일에 복사하시겠습니까?`)) {
       setDailyData(prev => ({
         ...prev,
@@ -90,10 +117,10 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 모든 요일에 같은 항목 설정
-  const applyItemsToAllDays = (sourceDay) => {
+  const applyItemsToAllDays = (sourceDay: string) => {
     if (window.confirm(`${sourceDay}요일의 항목을 모든 요일에 적용하시겠습니까?`)) {
       const sourceItems = dailyData[sourceDay].items;
-      const newData = {};
+      const newData: DailyData = {};
       days.forEach(day => {
         newData[day] = {
           items: sourceItems.map(item => ({
@@ -108,7 +135,7 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 요일 접기/펼치기
-  const toggleDay = (day) => {
+  const toggleDay = (day: string) => {
     setExpandedDays(prev => ({
       ...prev,
       [day]: !prev[day]
@@ -117,7 +144,7 @@ const WeeklyPerformanceApp = () => {
 
   // 실적 계산
   const calculatePerformance = () => {
-    const itemResults = {};
+    const itemResults: Results = {};
     
     // 모든 항목 수집
     Object.entries(dailyData).forEach(([day, dayData]) => {
@@ -127,7 +154,9 @@ const WeeklyPerformanceApp = () => {
             targets: {},
             performances: {},
             weeklyTarget: 0,
-            weeklyPerformance: 0
+            weeklyPerformance: 0,
+            weekendTarget: 0,
+            achieved: false
           };
         }
         
@@ -153,7 +182,7 @@ const WeeklyPerformanceApp = () => {
   };
 
   // 결과 복사
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       alert('클립보드에 복사되었습니다!');
     });
@@ -163,8 +192,8 @@ const WeeklyPerformanceApp = () => {
   const generateSummary = () => {
     if (!results) return { weekday: '', weekend: '' };
     
-    const weekdayParts = [];
-    const weekendParts = [];
+    const weekdayParts: string[] = [];
+    const weekendParts: string[] = [];
     
     Object.entries(results).forEach(([itemName, data]) => {
       const diff = data.weeklyPerformance - data.weeklyTarget;
@@ -363,39 +392,4 @@ const WeeklyPerformanceApp = () => {
               
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">평일 실적:</p>
-                  <div className="bg-white p-2 rounded border border-gray-200 font-mono text-sm">
-                    {summary.weekday}
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(summary.weekday)}
-                    className="mt-2 flex items-center gap-1 px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors text-sm"
-                  >
-                    <Copy size={14} />
-                    복사
-                  </button>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-semibold text-gray-600 mb-1">주말 목표:</p>
-                  <div className="bg-white p-2 rounded border border-gray-200 font-mono text-sm">
-                    {summary.weekend}
-                  </div>
-                  <button
-                    onClick={() => copyToClipboard(summary.weekend)}
-                    className="mt-2 flex items-center gap-1 px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition-colors text-sm"
-                  >
-                    <Copy size={14} />
-                    복사
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default WeeklyPerformanceApp;
+                  <p className="text-sm font-semibold text-gray-600 mb-1">평일 실
