@@ -95,6 +95,29 @@ const WeeklyPerformanceApp = () => {
     }));
   };
 
+  // Enter키로 다음 입력칸으로 이동
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, day: string, index: number, field: keyof Item) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const inputs = document.querySelectorAll(`input[data-day="${day}"]`);
+      const currentIndex = Array.from(inputs).indexOf(e.currentTarget);
+      const nextInput = inputs[currentIndex + 1] as HTMLInputElement;
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.select();
+      }
+    }
+  };
+
+  // 숫자만 입력 가능하도록 제한
+  const handleNumberInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || /^\d+$/.test(value)) {
+      return value;
+    }
+    return e.target.value.replace(/[^\d]/g, '');
+  };
+
   const copyItemsToDay = (fromDay: string, toDay: string) => {
     if (window.confirm(`${fromDay}요일의 항목을 ${toDay}요일에 복사하시겠습니까?`)) {
       setDailyData(prev => ({
@@ -206,6 +229,7 @@ const WeeklyPerformanceApp = () => {
             주간 실적 계산기
           </h1>
           <p className="text-gray-600">매일 다른 항목과 목표를 설정할 수 있습니다</p>
+          <p className="text-sm text-blue-600 mt-2">💡 Tab 또는 Enter키로 빠르게 이동하며 입력할 수 있습니다</p>
         </div>
 
         <div className="space-y-4 mb-6">
@@ -272,32 +296,54 @@ const WeeklyPerformanceApp = () => {
                                 type="text"
                                 value={item.name}
                                 onChange={(e) => updateItem(day, index, 'name', e.target.value)}
+                                onKeyDown={(e) => handleKeyDown(e, day, index, 'name')}
                                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 placeholder="항목명"
+                                data-day={day}
+                                tabIndex={index * 3 + 1}
                               />
                             </td>
                             <td className="py-2 px-3">
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={item.target}
-                                onChange={(e) => updateItem(day, index, 'target', e.target.value)}
+                                onChange={(e) => {
+                                  const value = handleNumberInput(e);
+                                  updateItem(day, index, 'target', value);
+                                }}
+                                onKeyDown={(e) => handleKeyDown(e, day, index, 'target')}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 className="w-full px-2 py-1 border border-blue-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 placeholder="0"
+                                data-day={day}
+                                tabIndex={index * 3 + 2}
                               />
                             </td>
                             <td className="py-2 px-3">
                               <input
-                                type="number"
+                                type="text"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 value={item.performance}
-                                onChange={(e) => updateItem(day, index, 'performance', e.target.value)}
+                                onChange={(e) => {
+                                  const value = handleNumberInput(e);
+                                  updateItem(day, index, 'performance', value);
+                                }}
+                                onKeyDown={(e) => handleKeyDown(e, day, index, 'performance')}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 className="w-full px-2 py-1 border border-green-300 rounded text-center focus:outline-none focus:ring-2 focus:ring-green-400"
                                 placeholder="0"
+                                data-day={day}
+                                tabIndex={index * 3 + 3}
                               />
                             </td>
                             <td className="py-2 px-3">
                               <button
                                 onClick={() => removeItem(day, index)}
                                 className="text-red-500 hover:text-red-700 transition-colors"
+                                tabIndex={-1}
                               >
                                 <Trash2 size={18} />
                               </button>
